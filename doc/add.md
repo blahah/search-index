@@ -10,6 +10,12 @@ request(url)                      // <- could also be something like fs.getReadS
   .pipe(JSONStream.parse())
   .pipe(index.defaultPipeline())
   .pipe(index.add())
+  .on('data', function(d) {
+    // this function needs to be called if you want to listen for the end event
+  })
+  .on('end', function() {
+    // complete
+  })
 ```
 
 Indexing options can be set at a batch, document, or field level.
@@ -86,8 +92,10 @@ s.push(null)
 ```
 ## Document Processing Pipeline
 
-`.defaultPipeline()` converts these documents into a special vector
-format. As you become more advanced, you may want to manipulate these
+`.defaultPipeline()` uses [docProc](https://github.com/fergiemcdowall/docproc).
+
+`.defaultPipeline()` converts these documents into a [special vector
+format](https://github.com/fergiemcdowall/docproc). As you become more advanced, you may want to manipulate these
 vectors in order to implement advanced features such as stemming or
 synonyms. However `search-index` ships with a default processing
 pipeline that allows you to send Plain Old JavaScript Objects to the
@@ -112,5 +120,6 @@ The `.add` is a writable stream that accepts the processed documents
 dataStream                       // <- stream of docs to be indexed
   .pipe(index.defaultPipeline())
   .pipe(index.add())
+                                 // <- you must drain and end the stream here (see top of page)
 ```
 

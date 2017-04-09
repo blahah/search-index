@@ -126,6 +126,10 @@ describe('categories: ', function () {
   it('return all docs, and show manufacturer category', function (done) {
     var result = [
       {
+        'key': '*',
+        'value': 4
+      },
+      {
         'key': 'armani',
         'value': 1
       },
@@ -156,6 +160,10 @@ describe('categories: ', function () {
 
   it('return all docs, and show manufacturer category by set', function (done) {
     var result = [
+      {
+        'key': '*',
+        'value': [ '10', '2', '3', '9' ]
+      },
       {
         'key': 'armani',
         'value': [ '10' ]
@@ -188,6 +196,7 @@ describe('categories: ', function () {
 
   it('return all docs, and show manufacturer category, filter on color: black', function (done) {
     var result = [
+      { key: '*', value: 3 },
       { key: 'apple', value: 1 },
       { key: 'versace', value: 1 },
       { key: 'victorinox', value: 1 }
@@ -218,8 +227,65 @@ describe('categories: ', function () {
     })
   })
 
+  it('return all docs, and show color category, filter on color: black', function (done) {
+    var result = [
+      { key: '*', value: 6 },
+      { key: 'black', value: 6, filter: true },
+      { key: 'gold', value: 6 },
+      { key: 'pink', value: 3 },
+      { key: 'white', value: 3 }
+    ]
+    si.categorize({
+      query: [
+        {
+          AND: {
+            '*': ['*'],
+            'color': ['black']
+          }
+        }
+      ],
+      category: {
+        field: 'color'
+      }
+    }).on('data', function (data) {
+      data.should.eql(result.shift())
+    }).on('end', function () {
+      result.length.should.be.exactly(0)
+      return done()
+    })
+  })
+
+  it('return all docs, and show color category, filter on color: black, pink', function (done) {
+    var result = [
+      { key: '*', value: 3 },
+      { key: 'black', value: 3, filter: true },
+      { key: 'gold', value: 3 },
+      { key: 'pink', value: 3, filter: true }
+    ]
+    si.categorize({
+      query: [
+        {
+          AND: {
+            '*': ['*'],
+            'color': ['black', 'pink']
+          }
+        }
+      ],
+      category: {
+        field: 'color'
+      }
+    }).on('data', function (data) {
+      data.should.eql(result.shift())
+    }).on('end', function () {
+      result.length.should.be.exactly(0)
+      return done()
+    })
+  })
+
+
   it('should be able to do simple filtering on price', function (done) {
     var result = [
+      { key: '*', value: 3 },
       { key: 'armani', value: 1 },
       { key: 'versace', value: 1 },
       { key: 'victorinox', value: 1 }
@@ -250,6 +316,7 @@ describe('categories: ', function () {
 
   it('search for Armarni AND Watch OR Victorinox AND swiss OR TW AND watch and return categories', function (done) {
     var result = [
+      { key: '*', value: 4 },
       { key: 'armani', value: 2 },
       { key: 'tw', value: 1 },
       { key: 'victorinox', value: 2 }
@@ -280,6 +347,7 @@ describe('categories: ', function () {
 
   it('search for "swiss" NOT "watch" and return categories for manufacturer', function (done) {
     var result = [
+      { key: '*', value: ['4', '5'] },
       { key: 'charriol', value: [ '4' ] },
       { key: 'ferragamo', value: [ '5' ] }
     ]
@@ -303,8 +371,9 @@ describe('categories: ', function () {
     })
   })
 
-  it('return all docs, and show manufacturer and color categories', function (done) {
+  it('return all docs, show color category', function (done) {
     var result = [
+      { key: '*', value: 10 },
       { key: 'black', value: 6 },
       { key: 'blue', value: 1 },
       { key: 'gold', value: 7 },
@@ -322,13 +391,64 @@ describe('categories: ', function () {
         field: 'color'
       }
     }).on('data', function (data) {
-      // console.log(data)
       data.should.eql(result.shift())
     }).on('end', function () {
       result.length.should.be.exactly(0)
       return done()
     })
   })
+
+  it('return all docs, show color category, limit to 4', function (done) {
+    var result = [
+      { key: '*', value: 10 },
+      { key: 'black', value: 6 },
+      { key: 'blue', value: 1 },
+      { key: 'gold', value: 7 }
+    ]
+    si.categorize({
+      query: [
+        {
+          AND: {'*': ['*']}
+        }
+      ],
+      category: {
+        field: 'color'
+      },
+      pageSize: 4
+    }).on('data', function (data) {
+      data.should.eql(result.shift())
+    }).on('end', function () {
+      result.length.should.be.exactly(0)
+      return done()
+    })
+  })
+
+  it('return all docs, show color category, offset 1, limit to 4', function (done) {
+    var result = [
+      { key: 'black', value: 6 },
+      { key: 'blue', value: 1 },
+      { key: 'gold', value: 7 },
+      { key: 'pink', value: 4 }
+    ]
+    si.categorize({
+      query: [
+        {
+          AND: {'*': ['*']}
+        }
+      ],
+      category: {
+        field: 'color'
+      },
+      offset: 1,
+      pageSize: 4
+    }).on('data', function (data) {
+      data.should.eql(result.shift())
+    }).on('end', function () {
+      result.length.should.be.exactly(0)
+      return done()
+    })
+  })
+
 
   it('bucket on price', function (done) {
     var result = [

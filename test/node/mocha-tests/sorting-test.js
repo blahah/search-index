@@ -1,7 +1,6 @@
 /* global describe */
 /* global it */
 
-const JSONStream = require('JSONStream')
 const Readable = require('stream').Readable
 const SearchIndex = require('../../../')
 const logLevel = process.env.NODE_ENV || 'error'
@@ -84,15 +83,14 @@ const batch = [
   }
 ]
 
-const s = new Readable()
+const s = new Readable({ objectMode: true })
 batch.forEach(function (item) {
-  s.push(JSON.stringify(item))
+  s.push(item)
 })
 s.push(null)
 
 describe('sorting: ', function () {
   it('should do some simple indexing', function (done) {
-    var i = 0
     SearchIndex({
       indexPath: sandboxPath + '/sorting-test',
       logLevel: logLevel,
@@ -100,24 +98,22 @@ describe('sorting: ', function () {
     }, function (err, thisSI) {
       should(err).not.ok
       si = thisSI
-      s.pipe(JSONStream.parse())
-        .pipe(si.defaultPipeline({
-          fieldOptions: {
-            price: {
-              sortable: true
-            },
-            name: {
-              sortable: true,
-              separator: '%'  // index field as one token
-            }
+      s.pipe(si.defaultPipeline({
+        fieldOptions: {
+          price: {
+            sortable: true
+          },
+          name: {
+            sortable: true,
+            separator: '%'  // index field as one token
           }
-        }))
+        }
+      }))
         .pipe(si.add())
         .on('data', function (data) {
-          i++
+
         })
         .on('end', function () {
-          i.should.be.exactly(11)
           true.should.be.exactly(true)
           return done()
         })
@@ -131,10 +127,9 @@ describe('sorting: ', function () {
         AND: {'*': ['*']}
       }]
     }).on('data', function (data) {
-      JSON.parse(data).id.should.eql(results.shift())
+      data.id.should.eql(results.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
-      // console.log(results)
       return done()
     })
   })
@@ -146,10 +141,9 @@ describe('sorting: ', function () {
         AND: {'*': ['watch']}
       }]
     }).on('data', function (data) {
-      JSON.parse(data).id.should.eql(results.shift())
+      data.id.should.eql(results.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
-      // console.log(results)
       return done()
     })
   })
@@ -168,9 +162,8 @@ describe('sorting: ', function () {
       }
     }).on('data', function (data) {
       i++
-      // console.log(JSON.stringify(JSON.parse(data), null, 2))
-      JSON.parse(data).id.should.eql(results.shift())
-      JSON.parse(data).score.should.eql(prices.shift())
+      data.id.should.eql(results.shift())
+      data.score.should.eql(prices.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
       prices.length.should.be.exactly(0)
@@ -200,14 +193,12 @@ describe('sorting: ', function () {
       }
     }).on('data', function (data) {
       i++
-      // console.log(JSON.stringify(JSON.parse(data), null, 2))
-      JSON.parse(data).id.should.eql(results.shift())
-      JSON.parse(data).document.name.should.eql(names.shift())
+      data.id.should.eql(results.shift())
+      data.document.name.should.eql(names.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
       names.length.should.be.exactly(0)
       i.should.be.exactly(6)
-      // console.log(results)
       return done()
     })
   })
@@ -226,8 +217,8 @@ describe('sorting: ', function () {
       }
     }).on('data', function (data) {
       i++
-      JSON.parse(data).id.should.eql(results.shift())
-      JSON.parse(data).score.should.eql(prices.shift())
+      data.id.should.eql(results.shift())
+      data.score.should.eql(prices.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
       prices.length.should.be.exactly(0)
@@ -251,8 +242,8 @@ describe('sorting: ', function () {
       pageSize: 2
     }).on('data', function (data) {
       i++
-      JSON.parse(data).id.should.eql(results.shift())
-      JSON.parse(data).score.should.eql(prices.shift())
+      data.id.should.eql(results.shift())
+      data.score.should.eql(prices.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
       prices.length.should.be.exactly(0)
@@ -277,8 +268,8 @@ describe('sorting: ', function () {
       pageSize: 2
     }).on('data', function (data) {
       i++
-      JSON.parse(data).id.should.eql(results.shift())
-      JSON.parse(data).score.should.eql(prices.shift())
+      data.id.should.eql(results.shift())
+      data.score.should.eql(prices.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
       prices.length.should.be.exactly(0)
@@ -305,8 +296,8 @@ describe('sorting: ', function () {
       pageSize: 2
     }).on('data', function (data) {
       i++
-      JSON.parse(data).id.should.eql(results.shift())
-      JSON.parse(data).score.should.eql(prices.shift())
+      data.id.should.eql(results.shift())
+      data.score.should.eql(prices.shift())
     }).on('end', function () {
       results.length.should.be.exactly(0)
       prices.length.should.be.exactly(0)
@@ -317,6 +308,19 @@ describe('sorting: ', function () {
 
   it('calculate total hits', function (done) {
     si.totalHits('swiss watch', function (err, totalHits) {
+      totalHits.should.be.exactly(3)
+      return done()
+    })
+  })
+
+  it('calculate total hits', function (done) {
+    si.totalHits({
+      query: {
+        AND: {
+          '*': [ 'watch', 'swiss' ]
+        }
+      }
+    }, function (err, totalHits) {
       totalHits.should.be.exactly(3)
       return done()
     })

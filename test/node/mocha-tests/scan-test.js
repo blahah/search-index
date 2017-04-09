@@ -6,6 +6,7 @@ const Readable = require('stream').Readable
 const SearchIndex = require('../../../')
 const logLevel = process.env.NODE_ENV || 'error'
 const sandbox = process.env.SANDBOX || 'test/sandbox'
+const should = require('should')
 
 var si
 
@@ -82,29 +83,27 @@ const batch = [
   }
 ]
 
-var s = new Readable()
+var s = new Readable({ objectMode: true })
 batch.forEach(function (item) {
-  s.push(JSON.stringify(item))
+  s.push(item)
 })
 s.push(null)
 
 describe('scanning: ', function () {
   it('initialize a search index', function (done) {
-    var i = 0
     SearchIndex({
       indexPath: sandbox + '/si-scan',
       logLevel: logLevel
     }, function (err, thisSi) {
       ;(err === null).should.be.exactly(true)
       si = thisSi
-      s.pipe(JSONStream.parse())
-        .pipe(si.defaultPipeline())
+      s.pipe(si.defaultPipeline())
         .pipe(si.add())
         .on('data', function (data) {
-          i++
+
         })
         .on('end', function () {
-          i.should.be.exactly(11)
+          true.should.be.exactly(true)
           return done()
         })
     })
@@ -117,7 +116,7 @@ describe('scanning: ', function () {
         AND: {'*': ['swiss', 'watch']}
       }
     }).on('data', function (doc) {
-      results.push(JSON.parse(doc).id)
+      results.push(doc.id)
     }).on('end', function () {
       results.should.eql([ '10', '2', '3', '9' ])
       done()
@@ -131,7 +130,7 @@ describe('scanning: ', function () {
         AND: {'*': ['watch']}
       }
     }).on('data', function (doc) {
-      results.push(JSON.parse(doc).id)
+      results.push(doc.id)
     }).on('end', function () {
       results.should.eql([ '1', '10', '2', '3', '7', '9' ])
       done()
@@ -145,7 +144,7 @@ describe('scanning: ', function () {
         AND: {'name': ['swiss']}
       }
     }).on('data', function (doc) {
-      results.push(JSON.parse(doc).id)
+      results.push(doc.id)
     }).on('end', function () {
       results.should.eql([ '10', '2', '3', '4', '5' ])
       done()
@@ -164,9 +163,9 @@ describe('scanning: ', function () {
         }
       }
     }).on('data', function (doc) {
-      results.push(JSON.parse(doc).id)
+      results.push(doc.id)
     }).on('end', function () {
-      results.should.eql([ '10', '2', '3', '5' ])
+      results.should.eql([ '10', '3' ])
       done()
     })
   })

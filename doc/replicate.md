@@ -8,6 +8,7 @@ You can easily merge, replicate, and move around indexes
 ```javascript
 // assumes that: var fs = require('fs')
 si.dbReadStream()
+  .pipe(JSONStream.stringify())
   .pipe(fs.createWriteStream('backup.json'))
   .on('close', function() {
     // done
@@ -17,7 +18,7 @@ si.dbReadStream()
 ## Merge saved file into index
 
 ```javascript
-// assumes that backup is in a file called 'backup.gz'
+// assumes that backup is in a file called 'backup.json'
 fs.createReadStream('backup.json')
   .pipe(JSONStream.parse())
   .pipe(si.dbWriteStream())

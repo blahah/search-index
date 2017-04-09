@@ -1,38 +1,41 @@
 {
   "name": "search-index",
   "description": "A persistent full text search engine for the browser and Node.js",
-  "version": "0.9.2",
+  "version": "0.9.17",
   "homepage": "https://github.com/fergiemcdowall/search-index",
   "engines": {
-    "node": ">=3"
+    "node": ">=4"
   },
   "license": "MIT",
   "dependencies": {
-    "bunyan": "1.8.1",
-    "leveldown": "1.5.0",
-    "levelup": "1.3.3",
-    "lodash.defaults": "4.2.0",
-    "search-index-adder": "0.1.13",
-    "search-index-searcher": "0.1.10",
-    "stopword": "0.1.1"
+    "bunyan": "^1.8.10",
+    "leveldown": "^1.6.0",
+    "levelup": "^1.3.5",
+    "search-index-adder": "^0.2.0",
+    "search-index-searcher": "^0.1.28"
   },
   "devDependencies": {
     "JSONStream": "^1.1.4",
     "brfs": "^1.4.3",
+    "browser-run": "^3.3.0",
     "browserify": "^13.1.0",
-    "chromedriver": "2.23.1",
+    "disc": "^1.3.2",
     "highland": "^2.10.0",
+    "http-server": "^0.9.0",
+    "left-pad": "^1.1.3",
     "level-js": "^2.2.4",
-    "mocha": "^3.0.2",
+    "mocha": "^3.2.0",
+    "request": "^2.78.0",
     "reuters-21578-json": "0.0.8",
-    "selenium-webdriver": "^2.53.3",
     "should": "^10.0.0",
     "sqldown": "^2.1.0",
     "sqlite3": "^3.1.4",
     "standard": "8.1.0",
+    "stopword": "^0.1.1",
     "tape": "^4.6.0",
     "term-vector": "0.1.2",
-    "uglifyjs": "^2.4.10"
+    "uglifyjs": "^2.4.10",
+    "written-number": "^0.5.0"
   },
   "author": {
     "email": "fergusmcdowall@gmail.com",
@@ -58,12 +61,14 @@
     }
   ],
   "scripts": {
+    "anylize-web-bundle": "browserify --full-paths lib/index.js --standalone SearchIndex > dist/search-index-full-paths.js && discify dist/search-index-full-paths.js > dist/out.html",
+    "demo-server": "http-server && echo 'demo is running at /doc/demo/'",
     "dist": "browserify lib/index.js --standalone SearchIndex > dist/search-index.js",
     "dist-min": "npm run dist && cat dist/search-index.js | uglifyjs -c dead_code > dist/search-index.min.js",
     "empty-sandbox": "rm -rf test/sandbox && mkdir test/sandbox",
-    "test": "npm run empty-sandbox && date && npm run test-node && npm run test-browserify && standard test/* lib/*",
-    "test-browserify": "npm run dist-min && tape test/browser/selenium-test.js",
-    "test-node": "mocha test/node/general-tests --recursive --timeout 10000"
+    "test": "npm run empty-sandbox && date && npm run test-node && npm run test-browser && standard test/* lib/*",
+    "test-browser": "node test/browser/runtest.js",
+    "test-node": "tape test/node/tape-tests/*.js && mocha test/node/mocha-tests --recursive --timeout 10000"
   },
   "repository": {
     "type": "git",

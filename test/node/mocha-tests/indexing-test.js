@@ -23,20 +23,18 @@ describe('Indexing API', function () {
   })
 
   it('should allow indexing a plain object (as opposed to an array) and options object omitted', function (done) {
-    var s = new Readable()
+    var s = new Readable({ objectMode: true })
     var doc = {
       id: '1',
       title: 'Mad Science is on the Rise',
       body: 'Mad,  mad things are happening.'
     }
-    s.push(JSON.stringify(doc))
+    s.push(doc)
     s.push(null)
-    s.pipe(JSONStream.parse())
-      .pipe(si.defaultPipeline()).pipe(si.add())
+    s.pipe(si.defaultPipeline()).pipe(si.add())
       .on('data', function (data) {})
       .on('end', function () {
         si.get(['1']).on('data', function (data) {
-          data = JSON.parse(data)
           data.should.eql(doc)
         })
         .on('end', function () {
@@ -46,21 +44,19 @@ describe('Indexing API', function () {
   })
 
   it('should allow indexing with undefined options object', function (done) {
-    var s = new Readable()
+    var s = new Readable({ objectMode: true })
     var doc = {
       id: '2',
       title: 'Mad Science is on the Rise',
       body: 'Mad,  mad things are happening.'
     }
-    s.push(JSON.stringify(doc))
+    s.push(doc)
     s.push(null)
-    s.pipe(JSONStream.parse())
-      .pipe(si.defaultPipeline())
+    s.pipe(si.defaultPipeline())
       .pipe(si.add(undefined))
       .on('data', function (data) {})
       .on('end', function () {
         si.get(['2']).on('data', function (data) {
-          data = JSON.parse(data)
           data.should.eql(doc)
         })
         .on('end', function () {
@@ -74,14 +70,13 @@ describe('Indexing API', function () {
       id: '3',
       content: 'Nexion Smart ERP 14.2.1.0\n\nRelease de ejemplo'
     }
-    var s = new Readable()
+    var s = new Readable({ objectMode: true })
     var i = 0
-    s.push(JSON.stringify(doc))
+    s.push(doc)
     s.push(null)
-    s.pipe(JSONStream.parse())
-      .pipe(si.defaultPipeline({
-        separator: /[ (\n)]+/
-      })).pipe(si.add(undefined))
+    s.pipe(si.defaultPipeline({
+      separator: /\s+/
+    })).pipe(si.add())
       .on('data', function (data) {})
       .on('end', function () {
         si.search({
@@ -90,11 +85,47 @@ describe('Indexing API', function () {
           }]
         }).on('data', function (data) {
           i++
-          JSON.parse(data).document.should.eql(doc)
+          data.document.should.eql(doc)
         }).on('end', function () {
           i.should.be.exactly(1)
           return done()
         })
       })
+  })
+
+  it('should allow indexing of a pre-tokenised field', function (done) {
+    var doc = {
+      id: '3',
+      content: ['Nexion', 'Smart', 'ERP', '14.2.1.0', 'Release', 'de', 'ejemplo']
+    }
+    var s = new Readable({ objectMode: true })
+    var i = 0
+    s.push(doc)
+    s.push(null)
+    s.pipe(si.defaultPipeline({
+      separator: /\s+/
+    })).pipe(si.add())
+      .on('data', function (data) {})
+      .on('end', function () {
+        si.search({
+          query: [{
+            AND: {'*': ['14.2.1.0']}
+          }]
+        }).on('data', function (data) {
+          i++
+          data.document.should.eql(doc)
+        }).on('end', function () {
+          i.should.be.exactly(1)
+          return done()
+        })
+      })
+  })
+
+  it('can count docs', function (done) {
+    si.countDocs(function (err, docCount) {
+      if (err) false.should.eql(true)
+      docCount.should.be.exactly(3)
+      return done()
+    })
   })
 })

@@ -5,6 +5,7 @@ const JSONStream = require('JSONStream')
 const SearchIndex = require('../../../')
 const fs = require('fs')
 const logLevel = process.env.NODE_ENV || 'error'
+const should = require('should')
 
 var si
 
@@ -57,7 +58,6 @@ describe('stopwords: ', function () {
       }
     }).on('data', function (data) {
       i++
-      data = JSON.parse(data)
       data.id.should.be.exactly(results.shift())
     }).on('end', function () {
       i.should.be.exactly(10)

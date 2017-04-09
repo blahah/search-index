@@ -7,17 +7,19 @@
 
 ### Reading
 
+ * [availableFields(...)](#availablefields)
  * [buckets(...)](#buckets)
  * [categorize(...)](#categorize)
+ * [countDocs(...)](#countdocs)
  * [get(...)](#get)
  * [match(...)](#match)
  * [search(...)](#search)
- * [tellMeAboutMySearchIndex(...)](#tellmeaboutmysearchindex)
- * [totalHits(...)](#totalHits)
+ * [totalHits(...)](#totalhits)
 
 ### Writing
 
  * [add(...)](#add)
+ * [concurrentAdd(...)](#concurrentadd)
  * [defaultPipeline(...)](#defaultpipeline)
  * [del(...)](#del)
  * [flush(...)](#flush)
@@ -29,6 +31,8 @@
 
 ### Options and Settings
  
+(viewable under `index.options`)
+
  *  [batchSize](#batchsize)
  *  [db](#db)
  *  [fieldedSearch](#fieldedsearch)
@@ -39,7 +43,6 @@
  *  [indexPath](#indexpath)
  *  [logLevel](#loglevel)
  *  [nGramLength](#ngramlength)
- *  [nGramSeparator](#ngramseparator)
  *  [separator](#separator)
  *  [stopwords](#stopwords)
 
@@ -93,6 +96,18 @@ index.close(function(err) {
       
 
 ## Reading
+
+### availableFields(...)
+
+Returns a readable stream of all fields that can be searched in.
+
+```javascript
+si.availableFields().on('data', function (field) {
+  // "field" is the name of a field that is searchable
+}).on('end', function () {
+  // done
+})
+```
 
 ### buckets(...)
 
@@ -170,9 +185,23 @@ and return a readable stream
   on:
 
   * **field** Name of the field to categorize on
-  * **limit** Limit the entries that will be returned
   * **set** if true- return a set of IDs. If false or not set, return
             a count
+
+In addition the q object can have *offset* and *pageSize*, that
+will work the same way as for the /search endpoint.
+
+
+### countDocs(...)
+
+Returns the total amount of docs in the index
+
+```javascript
+si.countDocs(function (err, count) {
+  console.log('this index contains ' + count + ' documents')
+})
+```
+
 
 ### get(...)
 
@@ -256,18 +285,24 @@ si.search({
    in all fields
 
 
- * **filters** _Array_ An object that can filter search
-   results. Filters can only be applied to fields that have been
-   flagged with the `filter` option during indexing. Filters are
+ * **filters** _Object_ One or more objects added to the AND and/or
+   NOT objects that filters the search results. Filters can only be
+   applied to any searchable fields in your index. Filters are
    commonly used in conjunction with the selection of catgories and
    buckets.
 
    ```javascript
-   [{
-     field: 'price',
-     gte:   '2',
-     lte:   '3'
-   }]
+   [
+     {
+       AND: {
+         '*':    ['watch', 'gold'],
+         'price': [{
+           gte: '1000',
+           lte: '8'
+         }]
+       }
+     }
+   ]
    ```
 
  * **offset** _number_ Sets the start index of the results. In a
@@ -277,16 +312,6 @@ si.search({
 
  * **pageSize** _number_ Sets the size of the resultset.
 
-
-### tellMeAboutMySearchIndex(...)
-
-Returns info about the state of the index
-
-```javascript
-si.tellMeAboutMySearchIndex(function (err, info) {
-  console.log(info)
-})
-```
 
 ### totalHits(...)
 
@@ -307,12 +332,42 @@ Returns a [writeable
 stream](https://nodejs.org/api/stream.html#stream_class_stream_writable)
 that can be used to index documents into the search index.
 
+Note that this stream cannot be used concurrently. If documents are
+being sent on top of one another then it is safer to use
+`concurrentAdd`, however `add` is faster and uses less resources.
+
+ * **batchOptions** is an object describing [indexing options](#defaultpipeline)
+
 ```javascript
-s.pipe(JSONStream.parse())
-  .pipe(si.defaultPipeline(options))
+// s is a Readable stream in object mode
+s.pipe(si.defaultPipeline(batchOptions))
   .pipe(si.add())
+  .on('data', function(d) {
+    // this function needs to be called if you want to listen for the end event
+  })
+  .on('end', function() {
+    // complete
+  })
 ```
 
+### concurrentAdd(...)
+
+An alternative to `.add(...)` that allows adding by passing an array
+of documents and waiting for a callback. Useful for environments where
+node streams cannot be constructed (such as browsers).
+
+Note that `concurrentAdd` queues documents internally, so in a
+scenario where unordered documents are being added rapidly from many
+sources `concurrentAdd` should be used.
+
+ * **data** is an array of documents
+ * **batchOptions** is an object describing [indexing options](#defaultpipeline)
+
+```javascript
+mySearchIndex.concurrentAdd(batchOptions, data, function(err) {
+  // docs added
+})
+```
 
 ### defaultPipeline(...)
 
@@ -353,13 +408,9 @@ pipeline stages can be inserted before and after processing if required.
 Deletes one or more documents from the corpus
 
 ```javascript
-si.del(docIDs)
-  .on('data', function (msg) {
-    // this doc is deleted
-  })
-  .on('end', function () {
-    // all docs are deleted
-  })
+si.del(docIDs, function(err) {
+  return done()
+})
 ```
 
 * **docIDs** an array of document IDs referencing documents that are
@@ -448,6 +499,18 @@ _boolean_
 
 Contains field specific overrides to global settings
 
+Example on setting options on several fields:
+```javascript
+fieldOptions: {
+  id: {
+    searchable: false
+  },
+  url: {
+    searchable: false
+  }
+}
+```
+
 ### preserveCase
 _true_
 
@@ -477,6 +540,13 @@ A [bunyan](https://github.com/trentm/node-bunyan) log level.
 
 ### nGramLength
 _number_ or _array_ or _object_
+
+All valid definitions of nGramLength:
+```javascript
+nGramLength = 1                // 1
+nGramLength = [1,3]            // 1 & 3
+nGramLength = {gte: 1, lte: 3} // 1, 2 & 3
+```
 
 Specifies how to split strings into phrases. See
 https://www.npmjs.com/package/term-vector for examples

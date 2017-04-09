@@ -9,10 +9,10 @@
 [![js-standard-style][js-standard-image]][js-standard-url] 
 
 ```javascript
-const getData = function(err, index) {
+const getData = function(err, myIndex) {
   readStreamOfDocuments                   // <- a stream of documents to be indexed
-    .pipe(index.defaultPipeline())        // <- an extentable document processing pipeline
-    .pipe(index.add())                    // <- an index that can now be queried
+    .pipe(myIndex.defaultPipeline())      // <- an extentable document processing pipeline
+    .pipe(myIndex.add())                  // <- myIndex is a search index that can now be queried
 }
 require('search-index')(options, getData) // <- make a new index
 ```
@@ -23,6 +23,7 @@ Find out how to use the `search-index` module here:
 
 ### For the impatient
  * [Quickstart](./doc/quickstart.md)
+ * [Simple web demo](https://rawgit.com/fergiemcdowall/search-index/master/doc/demo/index.html)
 
 ### API
 
@@ -37,7 +38,9 @@ Find out how to use the `search-index` module here:
  * [Sync an index](./doc/replicate.md)
  * [Run search-index in the browser](./doc/browser.md)
  * [Sync from a server to a browser](./doc/browserSync.md)
+ * [Work with Gulp.js](./doc/gulp.md)
 
+<!--
 ### Other How-tos and Articles on the Interwebs
  * [Getting started with search-index](#)
  * [How to implement stemming in search-index](#)
@@ -45,7 +48,7 @@ Find out how to use the `search-index` module here:
  * [Create a Network-Resiliant Search Application](#)
  * [Functionality vs index size (how to shrink your index)](#)
  * [Teasers and Search Term Highlighting](#)
-
+-->
 ### Release notes
 
 * 0.7.0 : new constructor

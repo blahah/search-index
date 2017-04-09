@@ -85,21 +85,21 @@ const searchCLI = function () {
 }
 
 const search = function(rawQuery) {
-  index.search(rawQuery.toString().slice(0, -1))
+  index.search(rawQuery.toString().replace( /\r?\n|\r/g, '' ))
     .on('data', printResults)
     .on('end', printPrompt)
 }
 
 const printResults = function (data) {
-  data = JSON.parse(data)
-  console.log()
-  console.log(chalk.blue(data.document.id) + ' : ' + chalk.blue(data.document.title))
+  console.log('\n' + chalk.blue(data.document.id) + ' : ' + chalk.blue(data.document.title))
   const terms = Object.keys(data.scoringCriteria[0].df).map(function(item) {
     return item.substring(2)
   })  
   for (var key in data.document) {
-    var teaser = tc(data.document[key], terms)
-    if (teaser) console.log(teaser)
+    if (data.document[key]) {
+      var teaser = tc(data.document[key], terms)
+      if (teaser) console.log(teaser)
+    }
   }
   console.log()
 }
